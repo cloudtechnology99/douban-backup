@@ -91,19 +91,21 @@ async function syncNotionDB(categorizedFeeds: FeedItem[], category: ItemCategory
   consola.start(`Handling ${category} feeds...`);
 
   const queryItems = await notion.databases.query({
-    database_id: dbID,
-    filter: {
-      or: categorizedFeeds.map((item) => ({
+  database_id: dbID,
+  filter: {
+    or: categorizedFeeds
+      .filter((item) => item.id) // 过滤掉没有 id 的项
+      .map((item) => ({
         property: DB_PROPERTIES.ITEM_LINK,
         url: {
-          contains: item.id,
+          contains: item.id, // 确保 item.id 不为空
         },
       })),
-    },
-  }).catch((error) => {
-    consola.error(`Failed to query ${category} database to check already inserted items. `, error);
-    process.exit(1);
-  });
+  },
+}).catch((error) => {
+  consola.error(`Failed to query ${category} database to check already inserted items. `, error);
+  process.exit(1);
+});
 
   const alreadyInsertedItems = new Set(queryItems.results.map((i) => {
     if ('properties' in i) {
